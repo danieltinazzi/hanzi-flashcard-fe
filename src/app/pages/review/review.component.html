@@ -1,16 +1,28 @@
 <div class="container">
-  <div class="card">
-    <mat-card>
-      <mat-card-content>
-        Character:
-        <p class="card-content">大</p>
-      </mat-card-content>
-    </mat-card>
-    <form>
-      <mat-form-field class="card-input">
-        <mat-label>Answer</mat-label>
-        <input matInput [value]="currentInput">
-      </mat-form-field>
-    </form>
-  </div>
+  @if (initialized) {
+    <mat-stepper headerPosition="bottom" (selectionChange)="onStepChange($event)" linear>
+      @for (character of characters; track $index) {
+        <mat-step class="step" [stepControl]="inputFormControl">
+          <mat-card>
+            <mat-card-content>
+              Character:
+              <p class="character">
+                {{character.simplified}}
+              </p>
+            </mat-card-content>
+          </mat-card>
+          <form class="input-box">
+            <ng-template matStepLabel></ng-template>
+            <mat-form-field class="input-field">
+              <mat-label>Pinyin</mat-label>
+              <input matInput [formControl]="inputFormControl">
+            </mat-form-field>
+            <div>
+              <button mat-button matStepperNext>Next</button>
+            </div>
+          </form>
+        </mat-step>
+      }
+    </mat-stepper>
+  }
 </div>
