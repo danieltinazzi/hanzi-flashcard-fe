@@ -1,6 +1,9 @@
 <div class="container">
   @if (initialized) {
-    <mat-stepper headerPosition="bottom" (selectionChange)="onStepChange($event)" linear>
+    <mat-stepper headerPosition="bottom"
+      [(selectedIndex)]="currentStepIndex"
+      (selectionChange)="onStepChange($event)"
+      linear>
       @for (character of characters; track $index) {
         <mat-step class="step" [stepControl]="inputFormControl">
           <mat-card>
@@ -11,11 +14,19 @@
               </p>
             </mat-card-content>
           </mat-card>
-          <form class="input-box">
+          <form #inputForm class="input-box" (ngSubmit)="onSubmit($event)">
             <ng-template matStepLabel></ng-template>
             <mat-form-field class="input-field">
               <mat-label>Pinyin</mat-label>
-              <input matInput [formControl]="inputFormControl">
+              <input matInput
+                [formControl]="inputFormControl"
+                [errorStateMatcher]="errorStateMatcher">
+              @if (inputFormControl.hasError('wrong')) {
+                <mat-error>The answer is wrong</mat-error>
+              }
+              @else if (inputFormControl.hasError('partial') && inputFormControl.hasError('suggestions')) {
+                <mat-error>The correct answer is: {{inputFormControl.getError('suggestions')}}</mat-error>
+              }
             </mat-form-field>
             <div>
               <button mat-button matStepperNext>Next</button>
