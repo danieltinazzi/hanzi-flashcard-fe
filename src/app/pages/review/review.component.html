@@ -4,30 +4,68 @@
       [(selectedIndex)]="currentStepIndex"
       (selectionChange)="onStepChange($event)"
       linear>
-      @for (character of characters; track $index) {
-        <mat-step class="step" [stepControl]="inputFormControl">
+      @for (reviewItem of reviewItems; track $index) {
+        <mat-step class="step"
+          [stepControl]="inputFormControl"
+          [editable]="false">
           <mat-card>
             <mat-card-content>
-              Character:
-              <p class="character">
-                {{character.simplified}}
-              </p>
+              @switch (reviewItem.type) {
+                @case (ReviewItemType.Pinyin) {
+                  <p class="character">
+                    {{reviewItem.flashcard.simplified}}
+                  </p>
+                  {{reviewItem.flashcard.english}}                  
+                }
+                @case (ReviewItemType.Meaning) {
+                  <p class="character">
+                    {{reviewItem.flashcard.simplified}}
+                  </p>
+                  {{reviewItem.flashcard.pinyin}}    
+                }
+                @case (ReviewItemType.Character) {
+                  {{reviewItem.flashcard.english}}    
+                }
+              }
             </mat-card-content>
           </mat-card>
-          <form #inputForm class="input-box" (ngSubmit)="onSubmit($event)">
-            <ng-template matStepLabel></ng-template>
-            <mat-form-field class="input-field">
-              <mat-label>Pinyin</mat-label>
-              <input matInput
-                [formControl]="inputFormControl"
-                [errorStateMatcher]="errorStateMatcher">
-              @if (inputFormControl.hasError('wrong')) {
-                <mat-error>The answer is wrong</mat-error>
+          <form #inputForm="ngForm" class="input-box" (ngSubmit)="onSubmit($event)">            
+            @switch (reviewItem.type) {
+              @case (ReviewItemType.Pinyin) {
+                <mat-form-field class="input-field">
+                  <mat-label>Pinyin</mat-label>
+                  <input matInput
+                    [formControl]="inputFormControl"
+                    [errorStateMatcher]="customErrorStateMatcher">
+                  @if (inputFormControl.pristine) {
+                    @if (inputFormControl.hasError('wrong')) {
+                      <mat-error>The answer is wrong</mat-error>
+                    } @else if (inputFormControl.hasError('suggestions')) {
+                      <mat-error>
+                        The correct answer is: {{inputFormControl.getError('suggestions')}}
+                      </mat-error>
+                    }
+                  }
+                </mat-form-field>
               }
-              @else if (inputFormControl.hasError('partial') && inputFormControl.hasError('suggestions')) {
-                <mat-error>The correct answer is: {{inputFormControl.getError('suggestions')}}</mat-error>
+              @case (ReviewItemType.Meaning) {
               }
-            </mat-form-field>
+              @case (ReviewItemType.Character) {
+                <mat-chip-listbox class="mat-mdc-chip-set-stacked"
+                  [formControl]="inputFormControl">
+                  @for (option of reviewItem.options; track option) {
+                    <mat-chip-option [value]="option.simplified">
+                      {{option.simplified}} {{option.pinyin}}
+                    </mat-chip-option>
+                  }
+                </mat-chip-listbox>
+                @if (inputFormControl.pristine && inputFormControl.hasError('wrong')) {
+                  <mat-error>
+                    The correct answer is: {{reviewItem.flashcard.simplified}} - {{reviewItem.flashcard.english}}
+                  </mat-error>
+                }
+              }
+            }
             <div>
               <button mat-button matStepperNext>Next</button>
             </div>

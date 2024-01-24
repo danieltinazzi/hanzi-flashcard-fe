@@ -12,3 +12,6 @@
   font-size: 4rem;
   margin: 0;
 }
+.mat-mdc-chip {
+  width: calc(50% - 8px)!important;
+}
