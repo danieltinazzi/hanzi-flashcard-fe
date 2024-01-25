@@ -3,7 +3,6 @@
     <form [formGroup]="formGroup" (ngSubmit)="onSubmit()">
       <mat-stepper headerPosition="bottom"
         [(selectedIndex)]="currentStepIndex"
-        (selectionChange)="onStepChange($event)"
         formArrayName="formArray"
         linear>
         @for (reviewItem of review.reviewItems; track $index) {
