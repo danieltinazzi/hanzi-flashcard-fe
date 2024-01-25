@@ -1,77 +1,96 @@
 <div class="container">
-  @if (initialized) {
-    <mat-stepper headerPosition="bottom"
-      [(selectedIndex)]="currentStepIndex"
-      (selectionChange)="onStepChange($event)"
-      linear>
-      @for (reviewItem of reviewItems; track $index) {
-        <mat-step class="step"
-          [stepControl]="inputFormControl"
-          [editable]="false">
-          <mat-card>
-            <mat-card-content>
-              @switch (reviewItem.type) {
-                @case (ReviewItemType.Pinyin) {
-                  <p class="character">
-                    {{reviewItem.flashcard.simplified}}
-                  </p>
-                  {{reviewItem.flashcard.english}}                  
-                }
-                @case (ReviewItemType.Meaning) {
-                  <p class="character">
-                    {{reviewItem.flashcard.simplified}}
-                  </p>
-                  {{reviewItem.flashcard.pinyin}}    
-                }
-                @case (ReviewItemType.Character) {
-                  {{reviewItem.flashcard.english}}    
-                }
-              }
-            </mat-card-content>
-          </mat-card>
-          <form #inputForm="ngForm" class="input-box" (ngSubmit)="onSubmit($event)">            
-            @switch (reviewItem.type) {
-              @case (ReviewItemType.Pinyin) {
-                <mat-form-field class="input-field">
-                  <mat-label>Pinyin</mat-label>
-                  <input matInput
-                    [formControl]="inputFormControl"
-                    [errorStateMatcher]="customErrorStateMatcher">
-                  @if (inputFormControl.pristine) {
-                    @if (inputFormControl.hasError('wrong')) {
-                      <mat-error>The answer is wrong</mat-error>
-                    } @else if (inputFormControl.hasError('suggestions')) {
+  @if (review$ | async; as review) {
+    <form [formGroup]="formGroup" (ngSubmit)="onSubmit()">
+      <mat-stepper headerPosition="bottom"
+        [(selectedIndex)]="currentStepIndex"
+        (selectionChange)="onStepChange($event)"
+        formArrayName="formArray"
+        linear>
+        @for (reviewItem of review.reviewItems; track $index) {
+          @if (getFormControl($index); as formControl) {
+            <mat-step class="step"
+              [formGroupName]="$index"
+              [stepControl]="formControl"
+              [editable]="false">
+              <mat-card>
+                <mat-card-content>
+                  @switch (reviewItem.type) {
+                    @case (ReviewItemType.Pinyin) {
+                      <p class="character">
+                        {{reviewItem.flashcard.simplified}}
+                      </p>
+                      {{reviewItem.flashcard.english}}                  
+                    }
+                    @case (ReviewItemType.Meaning) {
+                      <p class="character">
+                        {{reviewItem.flashcard.simplified}}
+                      </p>
+                      {{reviewItem.flashcard.pinyin}}    
+                    }
+                    @case (ReviewItemType.Character) {
+                      {{reviewItem.flashcard.english}}    
+                    }
+                  }
+                </mat-card-content>
+              </mat-card>
+              <div class="input-box">
+                @switch (reviewItem.type) {
+                  @case (ReviewItemType.Pinyin) {
+                    <mat-form-field class="input-field">
+                      <mat-label>Pinyin</mat-label>
+                      <input matInput
+                        [formControl]="formControl"
+                        [errorStateMatcher]="customErrorStateMatcher">
+                      @if (formControl.pristine) {
+                        @if (formControl.hasError('wrong')) {
+                          <mat-error>The answer is wrong</mat-error>
+                        } @else if (formControl.hasError('suggestions')) {
+                          <mat-error>
+                            The correct answer is: {{formControl.getError('suggestions')}}
+                          </mat-error>
+                        }
+                      }
+                    </mat-form-field>
+                  }
+                  @case (ReviewItemType.Meaning) {
+                    <mat-chip-listbox class="mat-mdc-chip-set-stacked"
+                      [formControl]="formControl">
+                      @for (option of reviewItem.options; track option) {
+                        <mat-chip-option [value]="option.simplified">
+                          {{option.english}}
+                        </mat-chip-option>
+                      }
+                    </mat-chip-listbox>
+                    @if (formControl.pristine && formControl.hasError('wrong')) {
                       <mat-error>
-                        The correct answer is: {{inputFormControl.getError('suggestions')}}
+                        The correct answer is: {{reviewItem.flashcard.english}}
                       </mat-error>
                     }
                   }
-                </mat-form-field>
-              }
-              @case (ReviewItemType.Meaning) {
-              }
-              @case (ReviewItemType.Character) {
-                <mat-chip-listbox class="mat-mdc-chip-set-stacked"
-                  [formControl]="inputFormControl">
-                  @for (option of reviewItem.options; track option) {
-                    <mat-chip-option [value]="option.simplified">
-                      {{option.simplified}} {{option.pinyin}}
-                    </mat-chip-option>
+                  @case (ReviewItemType.Character) {
+                    <mat-chip-listbox class="mat-mdc-chip-set-stacked"
+                      [formControl]="formControl">
+                      @for (option of reviewItem.options; track option) {
+                        <mat-chip-option [value]="option.simplified">
+                          {{option.simplified}} {{option.pinyin}}
+                        </mat-chip-option>
+                      }
+                    </mat-chip-listbox>
+                    @if (formControl.pristine && formControl.hasError('wrong')) {
+                      <mat-error>
+                        The correct answer is: {{reviewItem.flashcard.simplified}} - {{reviewItem.flashcard.english}}
+                      </mat-error>
+                    }
                   }
-                </mat-chip-listbox>
-                @if (inputFormControl.pristine && inputFormControl.hasError('wrong')) {
-                  <mat-error>
-                    The correct answer is: {{reviewItem.flashcard.simplified}} - {{reviewItem.flashcard.english}}
-                  </mat-error>
                 }
-              }
-            }
-            <div>
-              <button mat-button matStepperNext>Next</button>
-            </div>
-          </form>
-        </mat-step>
-      }
-    </mat-stepper>
+              </div>
+              <div>
+                <button mat-button matStepperNext>Next</button>
+              </div>
+            </mat-step>
+          }
+        }
+      </mat-stepper>
+    </form>
   }
 </div>

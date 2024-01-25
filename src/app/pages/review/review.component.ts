@@ -1,21 +1,26 @@
-import { Component, ViewChild } from '@angular/core';
-import { FormsModule, ReactiveFormsModule, FormControl, ValidatorFn, AbstractControl, ValidationErrors, FormGroupDirective, NgForm } from '@angular/forms';
+import { Component } from '@angular/core';
+import { FormsModule, ReactiveFormsModule, FormControl, FormGroup, FormBuilder, FormArray, FormGroupDirective, NgForm } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatCardModule } from '@angular/material/card';
 import { StepperSelectionEvent } from '@angular/cdk/stepper';
-import { ErrorStateMatcher } from '@angular/material/core';
-import { ReviewItem } from '../../data/review-item';
 import { ReviewItemType } from '../../enums/review-item-type';
 import {MatChipsModule} from '@angular/material/chips';
+import { ReviewService } from '../../services/review/review.service';
+import { Review } from '../../data/review';
+import { Observable } from 'rxjs';
+import { CommonModule } from '@angular/common';
+import { createValidator } from '../../functions/validation';
+import { ErrorStateMatcher } from '@angular/material/core';
 
 
 @Component({
   selector: 'app-review',
   standalone: true,
   imports: [
+    CommonModule,
     FormsModule,
     MatButtonModule,
     MatCardModule,
@@ -30,166 +35,50 @@ import {MatChipsModule} from '@angular/material/chips';
 })
 export class ReviewComponent {
 
+  review$: Observable<Review> | undefined;
+  formGroup!: FormGroup;
   currentStepIndex: number = 0;
-  reviewItems: ReviewItem[] = [];
-  initialized: boolean = false;
-  submitted: boolean = false;
 
-  inputFormControl = new FormControl('', [this.createValidator()]);
   customErrorStateMatcher = new CustomErrorStateMatcher();
 
   ReviewItemType = ReviewItemType;
-  
-  @ViewChild('inputForm') inputForm: NgForm | undefined;
+
+  constructor(
+    private reviewService: ReviewService,
+    private formBuilder: FormBuilder,
+  ) {}
 
   ngOnInit() {
-    // mockup
-    this.reviewItems = [
-      {
-        type: ReviewItemType.Pinyin,
-        flashcard: {
-          simplified: '大',
-          traditional: '大',
-          pinyin: [ 'dà' ],
-          english: [ 'large' ],
-        },
-        level: 0,
-      },
-      {
-        type: ReviewItemType.Pinyin,
-        flashcard: {
-          simplified: '大',
-          traditional: '大',
-          pinyin: [ 'dà' ],
-          english: [ 'large' ],
-        },
-        level: 0,
-      },
-      {
-        type: ReviewItemType.Character,
-        flashcard: {
-          simplified: '有',
-          traditional: '有',
-          pinyin: [ 'yŏu' ],
-          english: [ 'have' ],
-        },
-        level: 0,
-        options: [
-          {
-            simplified: '有',
-            traditional: '有',
-            pinyin: [ 'yŏu' ],
-            english: [ 'have' ],
-          },
-          {
-            simplified: '大',
-            traditional: '大',
-            pinyin: [ 'dà' ],
-            english: [ 'large' ],
-          },
-          {
-            simplified: '十',
-            traditional: '十',
-            pinyin: [ 'shí' ],
-            english: [ 'ten' ],
-          },
-          {
-            simplified: '人',
-            traditional: '人',
-            pinyin: [ 'rén' ],
-            english: [ 'person' ],
-          },
-        ],
-      },
-      {
-        type: ReviewItemType.Meaning,
-        flashcard: {
-          simplified: '人',
-          traditional: '人',
-          pinyin: [ 'rén' ],
-          english: [ 'person' ],
-        },
-        level: 0,
-      },
-    ];
-    this.initialized = true;
-  }
-
-  onStepChange(event: StepperSelectionEvent) {
-    this.inputFormControl.reset();
-    this.inputFormControl.setValue('');
-    this.inputFormControl.setValidators([this.createValidator()]);
-    this.inputFormControl.updateValueAndValidity();
-  }
-
-  createValidator(): ValidatorFn {
-    return (control: AbstractControl): ValidationErrors | null => {
-      switch (this.reviewItems[this.currentStepIndex]?.type) {
-        case ReviewItemType.Pinyin:
-          return this.validatePinyin(control);
-        case ReviewItemType.Meaning:
-          return this.validateMeaning(control);
-        case ReviewItemType.Character:
-          return this.validateCharacter(control);
-        default:
-          return null;
-      }
-    }
-  }
-
-  validatePinyin(control: AbstractControl) {
-    const value = control.value;
-    if (!value) {
-      return {required: true};
-    }
-    const flashcard = this.reviewItems[this.currentStepIndex].flashcard;
-    if (flashcard.pinyin.includes(value)) {
-      return null;
-    }
-    const suggestions = flashcard.pinyin.filter(s => {
-      return this.removeDiacritics(s) == this.removeDiacritics(value);
+    this.formGroup = this.formBuilder.group({
+      formArray: this.formBuilder.array([])
     });
-    if (suggestions.length > 0) {
-      return {
-        partial: true,
-        suggestions,
-      };
-    }
-    return {wrong: true};
+    this.review$ = this.reviewService.getReviewItems();
+    this.reviewService.getReviewItems().subscribe((review: Review) => {
+      review.reviewItems.forEach(reviewItem => {
+        this.getFormArray().push(new FormControl('', [createValidator(reviewItem)]));
+      });
+    });
   }
 
-  validateMeaning(control: AbstractControl) {
-    const value = control.value;
-    if (!value) {
-      return {required: true};
-    }
-    const flashcard = this.reviewItems[this.currentStepIndex].flashcard;
-    if (flashcard.english == value) {
-      return null;
-    }
-
-    return {wrong: true};
+  getFormArray() {
+    console.log(this.formGroup.get('formArray') as FormArray);
+    return this.formGroup.get('formArray') as FormArray;
   }
 
-  validateCharacter(control: AbstractControl) {
-    const value = control.value;
-    if (!value) {
-      return {required: true};
-    }
-    const flashcard = this.reviewItems[this.currentStepIndex].flashcard;
-    if (flashcard.simplified == value) {
-      return null;
-    }
-    return {wrong: true};
+  getFormControl(index: number) {
+    return this.getFormArray().get([index]) as FormControl;
   }
 
-  removeDiacritics(s: string) {
-    return s.normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  onStepChange(event: StepperSelectionEvent) {/*
+    const formControl = this.getFormControl(this.currentStepIndex);
+    formControl.reset();
+    formControl.setValue('');
+    */
   }
 
-  onSubmit(event: SubmitEvent) {
-    this.inputFormControl.markAsPristine();
-    this.inputFormControl.setValidators([]);
+  onSubmit() {
+    const formControl = this.getFormControl(this.currentStepIndex);
+    formControl.markAsPristine();
   }
 }
 
