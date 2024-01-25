@@ -5,7 +5,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatCardModule } from '@angular/material/card';
-import { StepperSelectionEvent } from '@angular/cdk/stepper';
 import { ReviewItemType } from '../../enums/review-item-type';
 import {MatChipsModule} from '@angular/material/chips';
 import { ReviewService } from '../../services/review/review.service';
@@ -67,13 +66,6 @@ export class ReviewComponent {
 
   getFormControl(index: number) {
     return this.getFormArray().get([index]) as FormControl;
-  }
-
-  onStepChange(event: StepperSelectionEvent) {/*
-    const formControl = this.getFormControl(this.currentStepIndex);
-    formControl.reset();
-    formControl.setValue('');
-    */
   }
 
   onSubmit() {
