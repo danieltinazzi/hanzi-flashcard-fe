@@ -1,9 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { FormsModule, ReactiveFormsModule, FormControl, FormGroup, FormBuilder, FormArray, FormGroupDirective, NgForm } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatStepperModule } from '@angular/material/stepper';
+import { MatStepper, MatStepperModule } from '@angular/material/stepper';
 import { MatCardModule } from '@angular/material/card';
 import { ReviewItemType } from '../../enums/review-item-type';
 import {MatChipsModule} from '@angular/material/chips';
@@ -12,7 +12,8 @@ import { Review } from '../../data/review';
 import { Observable } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { createValidator } from '../../functions/validation';
-import { ErrorStateMatcher } from '@angular/material/core';
+import { ReviewItemStatus } from '../../enums/review-item-status';
+import { ReviewItem } from '../../data/review-item';
 
 
 @Component({
@@ -33,14 +34,16 @@ import { ErrorStateMatcher } from '@angular/material/core';
   styleUrl: './review.component.scss'
 })
 export class ReviewComponent {
+  
+  @ViewChild('stepper') stepper!: MatStepper;
 
-  review$: Observable<Review> | undefined;
+  review!: Review;
   formGroup!: FormGroup;
   currentStepIndex: number = 0;
-
-  customErrorStateMatcher = new CustomErrorStateMatcher();
+  isCurrentStepSubmitted: boolean = false;
 
   ReviewItemType = ReviewItemType;
+  ReviewItemStatus = ReviewItemStatus;
 
   constructor(
     private reviewService: ReviewService,
@@ -51,16 +54,19 @@ export class ReviewComponent {
     this.formGroup = this.formBuilder.group({
       formArray: this.formBuilder.array([])
     });
-    this.review$ = this.reviewService.getReviewItems();
     this.reviewService.getReviewItems().subscribe((review: Review) => {
-      review.reviewItems.forEach(reviewItem => {
-        this.getFormArray().push(new FormControl('', [createValidator(reviewItem)]));
-      });
+      this.review = review;
+      this.createValidators();
+    });
+  }
+
+  createValidators() {
+    this.review.reviewItems.forEach(reviewItem => {
+      this.getFormArray().push(new FormControl('', [createValidator(reviewItem)]));
     });
   }
 
   getFormArray() {
-    console.log(this.formGroup.get('formArray') as FormArray);
     return this.formGroup.get('formArray') as FormArray;
   }
 
@@ -69,14 +75,17 @@ export class ReviewComponent {
   }
 
   onSubmit() {
+    console.log('submit');
     const formControl = this.getFormControl(this.currentStepIndex);
-    formControl.markAsPristine();
-  }
-}
+    const reviewItem = this.review.reviewItems[this.currentStepIndex];
 
-class CustomErrorStateMatcher implements ErrorStateMatcher {
-  isErrorState(control: FormControl | null, form: FormGroupDirective | NgForm | null): boolean {
-    const isSubmitted = form && form.submitted;
-    return !!(control && control.invalid && isSubmitted && control.pristine);
+    if (reviewItem.status != ReviewItemStatus.Pending) {
+      formControl.clearValidators();
+      formControl.updateValueAndValidity();
+      this.stepper.next();
+      return;
+    }
+    reviewItem.status = formControl.getError('status');
+    formControl.markAsPristine();
   }
 }

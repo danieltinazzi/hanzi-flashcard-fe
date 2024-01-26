@@ -1,9 +1,12 @@
 <div class="container">
-  @if (review$ | async; as review) {
+  @if (review) {
     <form [formGroup]="formGroup" (ngSubmit)="onSubmit()">
-      <mat-stepper headerPosition="bottom"
+      <mat-stepper
+        #stepper
+        headerPosition="bottom"
         [(selectedIndex)]="currentStepIndex"
         formArrayName="formArray"
+        labelPosition="bottom"
         linear>
         @for (reviewItem of review.reviewItems; track $index) {
           @if (getFormControl($index); as formControl) {
@@ -39,45 +42,51 @@
                       <mat-label>Pinyin</mat-label>
                       <input matInput
                         [formControl]="formControl"
-                        [errorStateMatcher]="customErrorStateMatcher">
-                      @if (formControl.pristine) {
-                        @if (formControl.hasError('wrong')) {
-                          <mat-error>The answer is wrong</mat-error>
-                        } @else if (formControl.hasError('suggestions')) {
-                          <mat-error>
-                            The correct answer is: {{formControl.getError('suggestions')}}
-                          </mat-error>
-                        }
-                      }
+                        [readonly]="reviewItem.status != ReviewItemStatus.Pending">
                     </mat-form-field>
                   }
                   @case (ReviewItemType.Meaning) {
                     <mat-chip-listbox class="mat-mdc-chip-set-stacked"
-                      [formControl]="formControl">
+                      [formControl]="formControl"
+                      (ngModelChange)="onSubmit()">
                       @for (option of reviewItem.options; track option) {
-                        <mat-chip-option [value]="option.simplified">
+                        <mat-chip-option
+                          [value]="option.simplified"
+                          [disabled]="reviewItem.status != ReviewItemStatus.Pending">
                           {{option.english}}
                         </mat-chip-option>
                       }
                     </mat-chip-listbox>
-                    @if (formControl.pristine && formControl.hasError('wrong')) {
-                      <mat-error>
-                        The correct answer is: {{reviewItem.flashcard.english}}
-                      </mat-error>
-                    }
                   }
                   @case (ReviewItemType.Character) {
                     <mat-chip-listbox class="mat-mdc-chip-set-stacked"
-                      [formControl]="formControl">
+                      [formControl]="formControl"
+                      (ngModelChange)="onSubmit()">
                       @for (option of reviewItem.options; track option) {
-                        <mat-chip-option [value]="option.simplified">
+                        <mat-chip-option
+                          [value]="option.simplified"
+                          [disabled]="reviewItem.status != ReviewItemStatus.Pending">
                           {{option.simplified}} {{option.pinyin}}
                         </mat-chip-option>
                       }
                     </mat-chip-listbox>
-                    @if (formControl.pristine && formControl.hasError('wrong')) {
+                  }
+                }
+                @if (formControl.pristine) {
+                  @switch (formControl.getError('status')) {
+                    @case (ReviewItemStatus.Correct) {
+                      <mat-hint>
+                        The answer is correct
+                      </mat-hint>
+                    }
+                    @case (ReviewItemStatus.PartiallyCorrect) {
                       <mat-error>
-                        The correct answer is: {{reviewItem.flashcard.simplified}} - {{reviewItem.flashcard.english}}
+                        Almost, the correct answer is: {{formControl.getError('suggestions')}}
+                      </mat-error>
+                    }
+                    @case (ReviewItemStatus.Wrong) {
+                      <mat-error>
+                        Wrong, the correct answer is: {{formControl.getError('suggestions')}}
                       </mat-error>
                     }
                   }
@@ -89,6 +98,10 @@
             </mat-step>
           }
         }
+        <mat-step class="step"
+          [editable]="false">
+          <p>Done.</p>
+        </mat-step>
       </mat-stepper>
     </form>
   }

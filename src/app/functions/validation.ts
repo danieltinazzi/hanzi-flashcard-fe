@@ -2,6 +2,7 @@ import { AbstractControl, ValidationErrors, ValidatorFn } from "@angular/forms";
 import { ReviewItem } from "../data/review-item";
 import { ReviewItemType } from "../enums/review-item-type";
 import { removeDiacritics } from "./format";
+import { ReviewItemStatus } from "../enums/review-item-status";
 
 export function createValidator(reviewItem: ReviewItem): ValidatorFn {
   switch (reviewItem.type) {
@@ -20,51 +21,81 @@ export function createValidator(reviewItem: ReviewItem): ValidatorFn {
 
 function createValidatorPinyin(reviewItem: ReviewItem): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
+    if (reviewItem.status != ReviewItemStatus.Pending) {
+      return null;
+    }
     const value = control.value;
     if (!value) {
-      return {required: true};
+      return {
+        status: ReviewItemStatus.Pending,
+      };
     }
     const flashcard = reviewItem.flashcard;
     if (flashcard.pinyin.includes(value)) {
-      return null;
+      return {
+        status: ReviewItemStatus.Correct,
+      };
     }
     const suggestions = flashcard.pinyin.filter(s => {
       return removeDiacritics(s) == removeDiacritics(value);
     });
     if (suggestions.length > 0) {
       return {
-        partial: true,
+        status: ReviewItemStatus.PartiallyCorrect,
         suggestions,
       };
     }
-    return {wrong: true};
+    return {
+      status: ReviewItemStatus.Wrong,
+      suggestions: reviewItem.flashcard.pinyin,
+    };
   }
 }
 
 function createValidatorMeaning(reviewItem: ReviewItem): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
+    if (reviewItem.status != ReviewItemStatus.Pending) {
+      return null;
+    }
     const value = control.value;
     if (!value) {
-      return {required: true};
+      return {
+        status: ReviewItemStatus.Pending,
+      };
     }
     const flashcard = reviewItem.flashcard;
     if (flashcard.simplified == value) {
-      return null;
+      return {
+        status: ReviewItemStatus.Correct,
+      };
     }
-    return {wrong: true};
+    return {
+      status: ReviewItemStatus.Wrong,
+      suggestions: reviewItem.flashcard.english,
+    };
   }
 }
 
 function createValidatorCharacter(reviewItem: ReviewItem): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
+    if (reviewItem.status != ReviewItemStatus.Pending) {
+      return null;
+    }
     const value = control.value;
     if (!value) {
-      return {required: true};
+      return {
+        status: ReviewItemStatus.Pending,
+      };
     }
     const flashcard = reviewItem.flashcard;
     if (flashcard.simplified == value) {
-      return null;
+      return {
+        status: ReviewItemStatus.Correct,
+      };
     }
-    return {wrong: true};
+    return {
+      status: ReviewItemStatus.Wrong,
+      suggestions: reviewItem.flashcard.simplified,
+    };
   }
 }

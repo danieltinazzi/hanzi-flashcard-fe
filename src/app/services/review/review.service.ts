@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { ReviewItem } from '../../data/review-item';
 import { Review } from '../../data/review';
+import { ReviewItemStatus } from '../../enums/review-item-status';
 
 @Injectable({
   providedIn: 'root'
@@ -47,6 +48,7 @@ export class ReviewService {
             english: [ 'person' ],
           },
         ],
+        status: ReviewItemStatus.Pending,
       },
       { 
         type: ReviewItemType.Pinyin,
@@ -57,6 +59,7 @@ export class ReviewService {
           english: [ 'large' ],
         },
         level: 0,
+        status: ReviewItemStatus.Pending,
       },
       {
         type: ReviewItemType.Character,
@@ -93,6 +96,7 @@ export class ReviewService {
             english: [ 'person' ],
           },
         ],
+        status: ReviewItemStatus.Pending,
       },
     ]
   };
