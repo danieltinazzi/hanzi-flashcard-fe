@@ -42,7 +42,8 @@
                       <mat-label>Pinyin</mat-label>
                       <input matInput
                         [formControl]="formControl"
-                        [readonly]="reviewItem.status != ReviewItemStatus.Pending">
+                        [readonly]="reviewItem.status != ReviewItemStatus.Pending"
+                        [errorStateMatcher]="customErrorStateMatcher">
                     </mat-form-field>
                   }
                   @case (ReviewItemType.Meaning) {

@@ -6,14 +6,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
 import { MatCardModule } from '@angular/material/card';
 import { ReviewItemType } from '../../enums/review-item-type';
-import {MatChipsModule} from '@angular/material/chips';
+import { MatChipsModule } from '@angular/material/chips';
 import { ReviewService } from '../../services/review/review.service';
 import { Review } from '../../data/review';
-import { Observable } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { createValidator } from '../../functions/validation';
 import { ReviewItemStatus } from '../../enums/review-item-status';
-import { ReviewItem } from '../../data/review-item';
+import { ErrorStateMatcher } from '@angular/material/core';
 
 
 @Component({
@@ -36,6 +35,7 @@ import { ReviewItem } from '../../data/review-item';
 export class ReviewComponent {
   
   @ViewChild('stepper') stepper!: MatStepper;
+  customErrorStateMatcher = new CustomErrorStateMatcher();
 
   review!: Review;
   formGroup!: FormGroup;
@@ -87,5 +87,12 @@ export class ReviewComponent {
     }
     reviewItem.status = formControl.getError('status');
     formControl.markAsPristine();
+  }
+}
+
+class CustomErrorStateMatcher implements ErrorStateMatcher {
+  isErrorState(formControl: FormControl | null, form: FormGroupDirective | NgForm | null): boolean {
+    return !!(formControl && formControl.invalid && formControl.pristine
+      && formControl.getError('status') != ReviewItemStatus.Pending);
   }
 }
