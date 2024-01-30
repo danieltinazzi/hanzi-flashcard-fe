@@ -1,7 +1,9 @@
 # Hanzi Flashcard Frontend
 
 This project is the frontend part of my web application to learn chinese characters with flashcards.
+
 It is written in Angular and is currently a work in progress.
+
 The backend is not released yet.
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.1.0.
